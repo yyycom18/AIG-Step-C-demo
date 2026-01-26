@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>HY-IG Spread Indicator: Analysis & Investment Strategy</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin: -20px -20px 30px -20px;
+            position: relative;
+        }
+        
+        .refresh-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .refresh-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .refresh-button:active {
+            transform: scale(0.95);
+        }
+        
+        .refresh-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .section {
+            margin: 40px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .section h3 {
+            color: #555;
+            margin: 25px 0 15px 0;
+            font-size: 1.5em;
+        }
+        
+        .section p {
+            margin: 15px 0;
+            text-align: justify;
+        }
+        
+        .chart-container {
+            margin: 30px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+        }
+        
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        
+        table th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .highlight-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 18px;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .action-row {
+            background: rgba(255, 193, 7, 0.1);
+        }
+        
+        .view-period-btn {
+            padding: 5px 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+        
+        .view-period-btn:hover {
+            background: #5568d3;
+            transform: scale(1.05);
+        }
+        
+        .view-period-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="refresh-button" id="refreshButton" onclick="refreshData()">🔄 Refresh Data</button>
+            <h1>HY-IG Spread Indicator Analysis</h1>
+            <div class="subtitle">Time Series Relationship Analysis & Investment Strategy Framework</div>
+        </header>
+
+        <!-- Section 0: Qualitative Analysis -->
+        <div class="section" id="qualitative">
+            <h2>Step 0: Qualitative Analysis - Understanding the HY-IG Spread</h2>
+            
+            <h3>What is the HY-IG Spread?</h3>
+            <p>
+                The HY-IG spread (High Yield minus Investment Grade Option-Adjusted Spread) measures the difference in credit risk 
+                between high-yield (junk) bonds and investment-grade bonds. It represents the additional yield investors demand to hold 
+                riskier high-yield bonds versus safer investment-grade bonds.
+            </p>
+            
+            <div class="info-box">
+                <strong>Data Sources:</strong><br>
+                • High Yield OAS: FRED Series BAMLH0A0HYM2 (Bank of America Merrill Lynch High Yield Master II OAS)<br>
+                • Investment Grade OAS: FRED Series BAMLC0A0CM (Bank of America Merrill Lynch US Corporate Master OAS)<br>
+                • Spread = HY OAS - IG OAS (measured in basis points)
+            </div>
+            
+            <h3>Market Interpretation</h3>
+            <p>
+                <strong>Widening Spreads (High HY-IG Spread):</strong> Indicates increased credit risk and market stress. 
+                Investors demand higher compensation for risk, signaling:
+            </p>
+            <ul style="margin: 15px 0; padding-left: 30px;">
+                <li>Heightened default risk concerns</li>
+                <li>Reduced liquidity in credit markets</li>
+                <li>Economic uncertainty and potential recession</li>
+                <li>Flight to quality (investors prefer safer assets)</li>
+            </ul>
+            
+            <p>
+                <strong>Tightening Spreads (Low HY-IG Spread):</strong> Indicates improving credit conditions and market confidence:
+            </p>
+            <ul style="margin: 15px 0; padding-left: 30px;">
+                <li>Reduced default risk perception</li>
+                <li>Improved economic outlook</li>
+                <li>Increased risk appetite</li>
+                <li>Better liquidity conditions</li>
+            </ul>
+            
+            <h3>Key Insights from Literature</h3>
+            <p>
+                The HY-IG spread is widely recognized as a leading indicator of economic stress and equity market performance:
+            </p>
+            <ul style="margin: 15px 0; padding-left: 30px;">
+                <li>Spreads typically widen before equity market declines and recessions</li>
+                <li>Credit markets often lead equity markets in detecting stress</li>
+                <li>Spreads are sensitive to monetary policy and liquidity conditions</li>
+                <li>The spread is a key component of financial stress indices</li>
+            </ul>
+            
+            <h3>Limitations as a Stock Market Indicator</h3>
+            <ul style="margin: 15px 0; padding-left: 30px;">
+                <li>Not a direct predictor - more useful as a regime/risk filter</li>
+                <li>Can give false signals during credit market disruptions unrelated to equities</li>
+                <li>Relationship with equities can change over time</li>
+                <li>Best used in combination with other indicators</li>
+            </ul>
+        </div>
+
+        <!-- Section 1: Key Findings Summary -->
+        <div class="section" id="summary">
+            <h2>Key Findings Summary</h2>
+            <div id="summaryContent" class="loading">Loading analysis results...</div>
+        </div>
+
+        <!-- Section 2: Correlation Analysis -->
+        <div class="section" id="correlation">
+            <h2>Step 2: Correlation Analysis</h2>
+            <div id="correlationChart" class="chart-container">
+                <div class="loading">Loading correlation analysis...</div>
+            </div>
+        </div>
+
+        <!-- Section 3: Lead-Lag Analysis -->
+        <div class="section" id="leadlag">
+            <h2>Step 3: Lead-Lag Analysis</h2>
+            <div id="leadlagChart" class="chart-container">
+                <div class="loading">Loading lead-lag analysis...</div>
+            </div>
+        </div>
+
+        <!-- Section 4: Causality Testing -->
+        <div class="section" id="causality">
+            <h2>Step 4: Causality Testing (Granger Causality)</h2>
+            <div id="causalityContent">
+                <div class="loading">Loading causality test results...</div>
+            </div>
+        </div>
+
+        <!-- Section 5: Predictive Modeling -->
+        <div class="section" id="predictive">
+            <h2>Step 5: Predictive Modeling</h2>
+            <div id="predictiveContent">
+                <div class="loading">Loading predictive model results...</div>
+            </div>
+        </div>
+
+        <!-- Section 6: Regime Analysis -->
+        <div class="section" id="regime">
+            <h2>Step 6: Regime Analysis</h2>
+            <div id="regimeChart" class="chart-container">
+                <div class="loading">Loading regime analysis...</div>
+            </div>
+            <div id="regimeStats"></div>
+        </div>
+
+        <!-- Section 7: Investment Strategy -->
+        <div class="section" id="strategy">
+            <h2>Investment Strategy: Backtested Implementation (1993-Present)</h2>
+            
+            <h3>Strategy Framework</h3>
+            
+            <div class="info-box" style="margin-bottom: 25px;">
+                <h4 style="margin-top: 0; color: #2196F3;">📊 Percentile Calculation Methodology</h4>
+                <p style="margin: 10px 0;">
+                    <strong>Rolling Window Approach:</strong> The strategy uses a <strong>rolling 60-month (5-year) window</strong> to calculate percentile thresholds for HY-IG spread classification. This ensures the strategy adapts to changing market conditions over time.
+                </p>
+                <p style="margin: 10px 0;">
+                    <strong>How it works:</strong>
+                </p>
+                <ul style="margin: 10px 0 10px 20px;">
+                    <li>For each month, the system looks back at the <strong>previous 60 months (5 years)</strong> of HY-IG spread data</li>
+                    <li>It calculates the 25th percentile (P25), 50th percentile (P50), 75th percentile (P75), and 90th percentile (P90) from this rolling window</li>
+                    <li>The current month's spread value is then compared against these percentile thresholds to determine the appropriate regime</li>
+                    <li>This rolling approach ensures the percentiles reflect recent market conditions rather than historical averages from the entire dataset</li>
+                </ul>
+                <p style="margin: 10px 0;">
+                    <strong>Example:</strong> For December 2024, the percentiles are calculated using spread data from January 2020 to December 2024. For January 2025, the percentiles are recalculated using data from February 2020 to January 2025, and so on.
+                </p>
+                <p style="margin: 10px 0;">
+                    <strong>Minimum Data Requirement:</strong> The system requires at least 12 months (1 year) of historical data before it can calculate percentiles. Once 60 months of data are available, the full rolling window is used.
+                </p>
+            </div>
+            
+            <p>
+                Based on the analysis results, we implement a dynamic position-sizing strategy based on HY-IG spread regimes:
+            </p>
+            
+            <div id="strategyFrameworkTable">
+                <table>
+                    <tr>
+                        <th>Spread Regime</th>
+                        <th>Percentile Range</th>
+                        <th>Current Percentile Range Figure</th>
+                        <th>Position Size</th>
+                        <th>Detail Calculation in Different 5 Spread Regimes</th>
+                        <th>Rationale</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Low Spread (Buy)</strong></td>
+                        <td>≤ 25th percentile</td>
+                        <td id="p25-range">Calculating...</td>
+                        <td>100% SPY</td>
+                        <td>If Spread ≤ P25: Position = 100% × SPY Return</td>
+                        <td>Favorable credit conditions, full equity exposure</td>
+                    </tr>
+                    <tr>
+                        <td>Moderate-Low Spread</td>
+                        <td>25th - 50th percentile</td>
+                        <td id="p25-p50-range">Calculating...</td>
+                        <td>75% SPY</td>
+                        <td>If P25 < Spread ≤ P50: Position = 75% × SPY Return</td>
+                        <td>Moderate risk, slight reduction</td>
+                    </tr>
+                    <tr>
+                        <td>Moderate-High Spread</td>
+                        <td>50th - 75th percentile</td>
+                        <td id="p50-p75-range">Calculating...</td>
+                        <td>50% SPY</td>
+                        <td>If P50 < Spread ≤ P75: Position = 50% × SPY Return</td>
+                        <td>Elevated risk, defensive positioning</td>
+                    </tr>
+                    <tr>
+                        <td>High Spread (Caution)</td>
+                        <td>75th - 90th percentile</td>
+                        <td id="p75-p90-range">Calculating...</td>
+                        <td>25% SPY</td>
+                        <td>If P75 < Spread ≤ P90: Position = 25% × SPY Return</td>
+                        <td>High credit stress, significant reduction</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Very High Spread (Reduce)</strong></td>
+                        <td>> 90th percentile</td>
+                        <td id="p90-range">Calculating...</td>
+                        <td>10% SPY</td>
+                        <td>If Spread > P90: Position = 10% × SPY Return</td>
+                        <td>Severe stress, minimal exposure</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <h3>Performance Metrics</h3>
+            <div id="strategyMetrics" class="highlight-box">
+                <div class="loading">Loading strategy performance metrics...</div>
+            </div>
+            
+            <h3>Strategy Implementation Timeline</h3>
+            <div id="strategyChart" class="chart-container">
+                <div class="loading">Loading strategy chart...</div>
+            </div>
+            
+            <h3>Cumulative Returns Comparison</h3>
+            <div id="cumulativeChart" class="chart-container">
+                <div class="loading">Loading cumulative returns chart...</div>
+            </div>
+            
+            <h3>Drawdown Analysis</h3>
+            <div id="drawdownChart" class="chart-container">
+                <div class="loading">Loading drawdown chart...</div>
+            </div>
+            
+            <h3>Current Strategy Review (Past 1 Year)</h3>
+            <p>Review of recent regime classifications and investment actions:</p>
+            <div id="currentStrategyReview" class="highlight-box">
+                <div class="loading">Loading current strategy review...</div>
+            </div>
+            
+            <h3>FRED Funds Rate Impact Analysis</h3>
+            <p>Analysis of how Federal Reserve rate changes affect strategy performance:</p>
+            <div id="fedRateAnalysis" class="highlight-box">
+                <div class="loading">Loading FRED rate analysis...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global data variables
+        let monthlyData = null;
+        let analysisData = null;
+        let strategyData = null;
+
+        // Load all data
+        async function loadAllData() {
+            // Check if page is opened via file:// protocol
+            if (window.location.protocol === 'file:') {
+                // Wait for DOM to be ready
+                const showError = () => {
+                    const summaryContainer = document.getElementById('summaryContent');
+                    if (summaryContainer) {
+                        summaryContainer.innerHTML = 
+                            '<div class="error">' +
+                            '<strong>❌ File Protocol Detected</strong><br><br>' +
+                            'You are viewing this page via <code>file://</code> protocol, which prevents loading data files due to browser security restrictions.<br><br>' +
+                            '<strong>To fix this:</strong><br>' +
+                            '1. Open a terminal/command prompt in the Project03 directory<br>' +
+                            '2. Run: <code>python run_server.py</code><br>' +
+                            '3. Open your browser and go to: <code>http://localhost:8001</code><br>' +
+                            '4. The server should automatically open in your browser<br><br>' +
+                            '<strong>Alternatively:</strong> If the server is already running, just navigate to <code>http://localhost:8001</code> in your browser.' +
+                            '</div>';
+                    }
+                    // Also show error in other sections
+                    const correlationChart = document.getElementById('correlationChart');
+                    if (correlationChart) {
+                        correlationChart.innerHTML = '<div class="error">Please use HTTP server: python run_server.py</div>';
+                    }
+                    const regimeChart = document.getElementById('regimeChart');
+                    if (regimeChart) {
+                        regimeChart.innerHTML = '<div class="error">Please use HTTP server: python run_server.py</div>';
+                    }
+                };
+                
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', showError);
+                } else {
+                    showError();
+                }
+                return;
+            }
+            
+            const refreshButton = document.getElementById('refreshButton');
+            if (refreshButton) {
+                refreshButton.disabled = true;
+                refreshButton.textContent = '⏳ Loading...';
+            }
+            
+            try {
+                // Add cache-busting parameter to force fresh data load
+                const timestamp = Date.now();
+                const random = Math.random().toString(36).substring(7);
+                const cacheBuster = '?v=' + timestamp + '&r=' + random;
+                
+                // Load monthly data
+                console.log('Loading hyig_data.json...');
+                const dataResponse = await fetch('data/hyig_data.json' + cacheBuster, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+                
+                if (!dataResponse.ok) {
+                    throw new Error(`HTTP error! status: ${dataResponse.status}`);
+                }
+                
+                monthlyData = await dataResponse.json();
+                console.log('✅ Monthly data loaded:', monthlyData.metadata ? monthlyData.metadata.total_records : 'unknown', 'records');
+
+                // Load analysis results (if available)
+                try {
+                    const analysisResponse = await fetch('outputs/analysis_summary.json' + cacheBuster, {
+                        cache: 'no-store'
+                    });
+                    if (analysisResponse.ok) {
+                        analysisData = await analysisResponse.json();
+                        console.log('✅ Analysis data loaded');
+                    } else {
+                        console.warn('⚠️ Analysis data not available (run python analysis.py)');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Analysis data not available:', e.message);
+                }
+
+                // Load strategy backtest (if available)
+                try {
+                    const strategyResponse = await fetch('outputs/strategy_backtest.json' + cacheBuster, {
+                        cache: 'no-store'
+                    });
+                    if (strategyResponse.ok) {
+                        strategyData = await strategyResponse.json();
+                        console.log('✅ Strategy data loaded');
+                    } else {
+                        console.warn('⚠️ Strategy data not available (run python strategy_backtest.py)');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Strategy data not available:', e.message);
+                }
+
+                // Render all sections
+                console.log('Rendering all sections...');
+                renderSummary();
+                renderCorrelation();
+                renderLeadLag();
+                renderCausality();
+                renderPredictive();
+                renderRegime();
+                renderStrategy();
+                console.log('All sections rendered');
+                
+                if (refreshButton) {
+                    refreshButton.disabled = false;
+                    refreshButton.textContent = '🔄 Refresh Data';
+                }
+
+            } catch (error) {
+                console.error('❌ Error loading data:', error);
+                
+                // Show error in summary section
+                const summaryContainer = document.getElementById('summaryContent');
+                if (summaryContainer) {
+                    summaryContainer.innerHTML = 
+                        '<div class="error">' +
+                        '<strong>Error loading data:</strong> ' + error.message + 
+                        '<br><br><strong>To fix this:</strong><br>' +
+                        '1. Make sure you ran: <code>python fetch_data.py</code><br>' +
+                        '2. Check that <code>data/hyig_data.json</code> exists<br>' +
+                        '3. If using file:// protocol, try using the server: <code>python run_server.py</code><br>' +
+                        '4. Open <code>http://localhost:8001</code> in your browser<br>' +
+                        '</div>';
+                }
+                
+                // Show errors in other sections
+                const correlationContainer = document.getElementById('correlationChart');
+                if (correlationContainer) {
+                    correlationContainer.innerHTML = 
+                        '<div class="error">Data not loaded. Click Refresh or run: python fetch_data.py</div>';
+                }
+                const regimeContainer = document.getElementById('regimeChart');
+                if (regimeContainer) {
+                    regimeContainer.innerHTML = 
+                        '<div class="error">Data not loaded. Click Refresh or run: python fetch_data.py</div>';
+                }
+                    
+                if (refreshButton) {
+                    refreshButton.disabled = false;
+                    refreshButton.textContent = '🔄 Refresh Data';
+                }
+            }
+        }
+        
+        // Refresh data function
+        function refreshData() {
+            console.log('🔄 Refreshing data...');
+            // Clear existing data
+            monthlyData = null;
+            analysisData = null;
+            strategyData = null;
+            // Reload
+            loadAllData();
+        }
+
+        function renderSummary() {
+            const container = document.getElementById('summaryContent');
+            if (!monthlyData || !monthlyData.stats) {
+                container.innerHTML = '<div class="error">Summary data not available</div>';
+                return;
+            }
+
+            const stats = monthlyData.stats;
+            container.innerHTML = `
+                <table>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                    </tr>
+                    <tr>
+                        <td>Mean Spread</td>
+                        <td>${stats.spread_mean.toFixed(2)} bps</td>
+                    </tr>
+                    <tr>
+                        <td>Std Deviation</td>
+                        <td>${stats.spread_std.toFixed(2)} bps</td>
+                    </tr>
+                    <tr>
+                        <td>Minimum</td>
+                        <td>${stats.spread_min.toFixed(2)} bps</td>
+                    </tr>
+                    <tr>
+                        <td>Maximum</td>
+                        <td>${stats.spread_max.toFixed(2)} bps</td>
+                    </tr>
+                    <tr>
+                        <td>25th Percentile</td>
+                        <td>${stats.spread_p25.toFixed(2)} bps</td>
+                    </tr>
+                    <tr>
+                        <td>Median (50th)</td>
+                        <td>${stats.spread_p50.toFixed(2)} bps</td>
+                    </tr>
+                    <tr>
+                        <td>75th Percentile</td>
+                        <td>${stats.spread_p75.toFixed(2)} bps</td>
+                    </tr>
+                    <tr>
+                        <td>90th Percentile</td>
+                        <td>${stats.spread_p90.toFixed(2)} bps</td>
+                    </tr>
+                </table>
+            `;
+        }
+
+        function renderCorrelation() {
+            const container = document.getElementById('correlationChart');
+            if (!container) {
+                console.error('correlationChart container not found');
+                return;
+            }
+            
+            if (!monthlyData || !monthlyData.monthly) {
+                container.innerHTML = '<div class="error">Correlation data not available. Run: python fetch_data.py</div>';
+                return;
+            }
+            
+            // Clear container before rendering
+            container.innerHTML = '';
+            
+            try {
+            const dates = monthlyData.monthly.dates;
+            const spreads = monthlyData.monthly.hy_ig_spread.map(v => v === "null" ? null : v);
+            const returns = monthlyData.monthly.spy_returns.map(v => v === "null" ? null : v);
+
+            // Filter valid pairs
+            const validData = [];
+            for (let i = 0; i < dates.length; i++) {
+                if (spreads[i] !== null && returns[i] !== null) {
+                    validData.push({x: spreads[i], y: returns[i]});
+                }
+            }
+
+            if (validData.length === 0) {
+                container.innerHTML = '<div class="error">No valid data for correlation</div>';
+                return;
+            }
+
+            const trace = {
+                x: validData.map(d => d.x),
+                y: validData.map(d => d.y),
+                mode: 'markers',
+                type: 'scatter',
+                name: 'Monthly Data',
+                marker: { size: 5, opacity: 0.6 }
+            };
+
+            const layout = {
+                title: 'HY-IG Spread vs SPY Monthly Returns',
+                xaxis: { title: 'HY-IG Spread (bps)' },
+                yaxis: { title: 'SPY Monthly Return (%)' },
+                height: 500
+            };
+
+                Plotly.newPlot('correlationChart', [trace], layout);
+            } catch (e) {
+                console.error('Error rendering correlation chart:', e);
+                container.innerHTML = '<div class="error">Error rendering chart: ' + e.message + '</div>';
+            }
+        }
+
+        function renderRegime() {
+            const container = document.getElementById('regimeChart');
+            if (!container) {
+                console.error('regimeChart container not found');
+                return;
+            }
+            
+            if (!monthlyData || !monthlyData.monthly) {
+                container.innerHTML = '<div class="error">Regime data not available. Run: python fetch_data.py</div>';
+                return;
+            }
+            
+            // Clear container before rendering
+            container.innerHTML = '';
+            
+            try {
+
+            const dates = monthlyData.monthly.dates;
+            const spreads = monthlyData.monthly.hy_ig_spread.map(v => v === "null" ? null : v);
+            const spy = monthlyData.monthly.spy.map(v => v === "null" ? null : v);
+
+            const trace = {
+                x: dates,
+                y: spreads,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'HY-IG Spread',
+                line: { color: '#667eea' }
+            };
+
+            const layout = {
+                title: 'HY-IG Spread Over Time',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Spread (bps)' },
+                height: 500
+            };
+
+                Plotly.newPlot('regimeChart', [trace], layout);
+            } catch (e) {
+                console.error('Error rendering regime chart:', e);
+                container.innerHTML = '<div class="error">Error rendering chart: ' + e.message + '</div>';
+            }
+        }
+
+        function renderLeadLag() {
+            const container = document.getElementById('leadlagChart');
+            if (!analysisData || !analysisData.lead_lag) {
+                container.innerHTML = '<div class="error">Lead-lag analysis data not available. Run: python analysis.py</div>';
+                return;
+            }
+
+            const leadLag = analysisData.lead_lag;
+            container.innerHTML = `
+                <div class="highlight-box">
+                    <h4>Lead-Lag Analysis Results</h4>
+                    <p><strong>Best Lag:</strong> ${leadLag.best_lag} month(s)</p>
+                    <p><strong>Best Correlation at Optimal Lag:</strong> ${leadLag.best_correlation.toFixed(4)}</p>
+                    <p><strong>Interpretation:</strong> The HY-IG spread ${leadLag.best_lag > 0 ? 'leads' : leadLag.best_lag < 0 ? 'lags' : 'is contemporaneous with'} SPY returns by ${Math.abs(leadLag.best_lag)} month(s).</p>
+                </div>
+            `;
+        }
+
+        function renderCausality() {
+            const container = document.getElementById('causalityContent');
+            if (!analysisData) {
+                container.innerHTML = '<div class="error">Causality test data not available. Run: python analysis.py</div>';
+                return;
+            }
+
+            // Granger causality results may not be in the summary, show placeholder
+            container.innerHTML = `
+                <div class="highlight-box">
+                    <h4>Granger Causality Test</h4>
+                    <p>Granger causality tests whether the HY-IG spread helps predict SPY returns beyond what past SPY returns can predict.</p>
+                    <p><em>Note: Detailed causality test results require running the full analysis script.</em></p>
+                    ${analysisData.lead_lag ? `<p><strong>Optimal Lag:</strong> ${analysisData.lead_lag.best_lag} month(s) (from lead-lag analysis)</p>` : ''}
+                </div>
+            `;
+        }
+
+        function renderPredictive() {
+            const container = document.getElementById('predictiveContent');
+            if (!analysisData || !analysisData.predictive_modeling) {
+                container.innerHTML = '<div class="error">Predictive modeling data not available. Run: python analysis.py</div>';
+                return;
+            }
+
+            const predictive = analysisData.predictive_modeling;
+            const features = predictive.top_features || [];
+            
+            container.innerHTML = `
+                <div class="highlight-box">
+                    <h4>Predictive Modeling Results</h4>
+                    <p><strong>Mean R²:</strong> ${predictive.mean_r2.toFixed(4)}</p>
+                    <p><strong>Top Features:</strong></p>
+                    <ul style="margin-left: 30px; margin-top: 10px;">
+                        ${features.map(f => `<li>${f}</li>`).join('')}
+                    </ul>
+                    <p><strong>Interpretation:</strong> ${predictive.mean_r2 < 0 ? 'Negative R² indicates the model performs worse than a simple mean predictor. This suggests the relationship is complex and may require non-linear models or regime-specific approaches.' : 'Positive R² indicates the model explains some variance in SPY returns.'}</p>
+                </div>
+            `;
+        }
+
+        function renderStrategy() {
+            if (!strategyData || !strategyData.performance_metrics) {
+                document.getElementById('strategyMetrics').innerHTML = 
+                    '<div class="error">Strategy backtest data not available. Run: python strategy_backtest.py</div>';
+                return;
+            }
+
+            const metrics = strategyData.performance_metrics;
+            document.getElementById('strategyMetrics').innerHTML = `
+                <h4>Strategy Performance (${strategyData.metadata.date_range.start} to ${strategyData.metadata.date_range.end})</h4>
+                <table>
+                    <tr>
+                        <th>Metric</th>
+                        <th>SPY</th>
+                        <th>Strategy</th>
+                        <th>Outperformance</th>
+                    </tr>
+                    <tr>
+                        <td>Total Return</td>
+                        <td>${metrics.spy.total_return.toFixed(2)}%</td>
+                        <td>${metrics.strategy.total_return.toFixed(2)}%</td>
+                        <td>${metrics.outperformance.total_return.toFixed(2)}%</td>
+                    </tr>
+                    <tr>
+                        <td>Annualized Return</td>
+                        <td>${metrics.spy.annualized_return.toFixed(2)}%</td>
+                        <td>${metrics.strategy.annualized_return.toFixed(2)}%</td>
+                        <td>${metrics.outperformance.annualized_return.toFixed(2)}%</td>
+                    </tr>
+                    <tr>
+                        <td>Sharpe Ratio</td>
+                        <td>${metrics.spy.sharpe_ratio.toFixed(2)}</td>
+                        <td>${metrics.strategy.sharpe_ratio.toFixed(2)}</td>
+                        <td>${metrics.outperformance.sharpe_improvement.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td>Max Drawdown</td>
+                        <td>${metrics.spy.max_drawdown.toFixed(2)}%</td>
+                        <td>${metrics.strategy.max_drawdown.toFixed(2)}%</td>
+                        <td>${metrics.outperformance.max_dd_improvement.toFixed(2)}%</td>
+                    </tr>
+                    <tr>
+                        <td>Win Rate</td>
+                        <td>${metrics.spy.win_rate.toFixed(1)}%</td>
+                        <td>${metrics.strategy.win_rate.toFixed(1)}%</td>
+                        <td>-</td>
+                    </tr>
+                </table>
+            `;
+
+            // Update percentile ranges in strategy framework table
+            if (strategyData && strategyData.monthly_data) {
+                updatePercentileRanges();
+            }
+            
+            // Render strategy charts
+            if (strategyData.monthly_data) {
+                console.log('Rendering strategy charts...');
+                try {
+                    renderStrategyChart();
+                    console.log('Strategy chart rendered');
+                } catch (e) {
+                    console.error('Error rendering strategy chart:', e);
+                    const chartContainer = document.getElementById('strategyChart');
+                    if (chartContainer) {
+                        chartContainer.innerHTML = 
+                            '<div class="error">Error rendering chart: ' + e.message + '</div>';
+                    }
+                }
+                try {
+                    renderCumulativeChart();
+                    console.log('Cumulative chart rendered');
+                } catch (e) {
+                    console.error('Error rendering cumulative chart:', e);
+                    const chartContainer = document.getElementById('cumulativeChart');
+                    if (chartContainer) {
+                        chartContainer.innerHTML = 
+                            '<div class="error">Error rendering chart: ' + e.message + '</div>';
+                    }
+                }
+                try {
+                    renderDrawdownChart();
+                    console.log('Drawdown chart rendered');
+                } catch (e) {
+                    console.error('Error rendering drawdown chart:', e);
+                    const chartContainer = document.getElementById('drawdownChart');
+                    if (chartContainer) {
+                        chartContainer.innerHTML = 
+                            '<div class="error">Error rendering chart: ' + e.message + '</div>';
+                    }
+                }
+            } else {
+                console.warn('No monthly data available for strategy charts');
+                const strategyContainer = document.getElementById('strategyChart');
+                const cumulativeContainer = document.getElementById('cumulativeChart');
+                const drawdownContainer = document.getElementById('drawdownChart');
+                
+                if (strategyContainer) {
+                    strategyContainer.innerHTML = '<div class="error">Monthly data not available. Run: python strategy_backtest.py</div>';
+                }
+                if (cumulativeContainer) {
+                    cumulativeContainer.innerHTML = '<div class="error">Monthly data not available. Run: python strategy_backtest.py</div>';
+                }
+                if (drawdownContainer) {
+                    drawdownContainer.innerHTML = '<div class="error">Monthly data not available. Run: python strategy_backtest.py</div>';
+                }
+            }
+            
+            // Render current strategy review
+            if (strategyData.current_strategy_review) {
+                renderCurrentStrategyReview();
+            }
+            
+            // Render FRED rate analysis
+            if (strategyData.performance_metrics && strategyData.performance_metrics.fed_rate_periods) {
+                renderFedRateAnalysis();
+            }
+        }
+
+        function updatePercentileRanges() {
+            /**
+             * Calculate current rolling percentiles from the most recent 60 months of data
+             * and update the Strategy Framework table with current percentile range figures
+             */
+            if (!strategyData || !strategyData.monthly_data || !strategyData.monthly_data.spread) {
+                console.warn('Cannot calculate percentiles: data not available');
+                return;
+            }
+            
+            const spreads = strategyData.monthly_data.spread
+                .map(v => v === "null" || v === null ? null : parseFloat(v))
+                .filter(v => v !== null && !isNaN(v));
+            
+            if (spreads.length === 0) {
+                console.warn('No valid spread data for percentile calculation');
+                return;
+            }
+            
+            // Get the most recent 60 months (or all available if less than 60)
+            const windowSize = 60;
+            const recentSpreads = spreads.slice(-windowSize);
+            
+            if (recentSpreads.length < 12) {
+                // Not enough data (minimum 12 months required)
+                document.getElementById('p25-range').textContent = 'Insufficient data (< 12 months)';
+                document.getElementById('p25-p50-range').textContent = 'Insufficient data (< 12 months)';
+                document.getElementById('p50-p75-range').textContent = 'Insufficient data (< 12 months)';
+                document.getElementById('p75-p90-range').textContent = 'Insufficient data (< 12 months)';
+                document.getElementById('p90-range').textContent = 'Insufficient data (< 12 months)';
+                return;
+            }
+            
+            // Sort for percentile calculation
+            const sorted = [...recentSpreads].sort((a, b) => a - b);
+            const n = sorted.length;
+            
+            // Calculate percentiles (using linear interpolation method)
+            const percentile = (arr, p) => {
+                if (arr.length === 0) return null;
+                const index = (p / 100) * (arr.length - 1);
+                const lower = Math.floor(index);
+                const upper = Math.ceil(index);
+                const weight = index - lower;
+                if (lower === upper) return arr[lower];
+                return arr[lower] * (1 - weight) + arr[upper] * weight;
+            };
+            
+            const p25 = percentile(sorted, 25);
+            const p50 = percentile(sorted, 50);
+            const p75 = percentile(sorted, 75);
+            const p90 = percentile(sorted, 90);
+            
+            // Update table cells with formatted percentile ranges
+            if (p25 !== null && !isNaN(p25)) {
+                document.getElementById('p25-range').textContent = `≤ ${p25.toFixed(2)} bps`;
+            } else {
+                document.getElementById('p25-range').textContent = 'N/A';
+            }
+            
+            if (p25 !== null && p50 !== null && !isNaN(p25) && !isNaN(p50)) {
+                document.getElementById('p25-p50-range').textContent = `${p25.toFixed(2)} - ${p50.toFixed(2)} bps`;
+            } else {
+                document.getElementById('p25-p50-range').textContent = 'N/A';
+            }
+            
+            if (p50 !== null && p75 !== null && !isNaN(p50) && !isNaN(p75)) {
+                document.getElementById('p50-p75-range').textContent = `${p50.toFixed(2)} - ${p75.toFixed(2)} bps`;
+            } else {
+                document.getElementById('p50-p75-range').textContent = 'N/A';
+            }
+            
+            if (p75 !== null && p90 !== null && !isNaN(p75) && !isNaN(p90)) {
+                document.getElementById('p75-p90-range').textContent = `${p75.toFixed(2)} - ${p90.toFixed(2)} bps`;
+            } else {
+                document.getElementById('p75-p90-range').textContent = 'N/A';
+            }
+            
+            if (p90 !== null && !isNaN(p90)) {
+                document.getElementById('p90-range').textContent = `> ${p90.toFixed(2)} bps`;
+            } else {
+                document.getElementById('p90-range').textContent = 'N/A';
+            }
+            
+            console.log(`✅ Updated percentile ranges (based on ${recentSpreads.length} months): P25=${p25?.toFixed(2)}, P50=${p50?.toFixed(2)}, P75=${p75?.toFixed(2)}, P90=${p90?.toFixed(2)}`);
+        }
+        
+        function renderStrategyChart() {
+            const container = document.getElementById('strategyChart');
+            if (!container) {
+                console.error('strategyChart container not found');
+                return;
+            }
+            
+            if (!strategyData || !strategyData.monthly_data) {
+                container.innerHTML = '<div class="error">Strategy data not available. Run: python strategy_backtest.py</div>';
+                return;
+            }
+            
+            // Clear container before rendering
+            container.innerHTML = '';
+            
+            const data = strategyData.monthly_data;
+            const dates = data.dates;
+            const spreads = data.spread.map(v => v === "null" ? null : parseFloat(v));
+            const positions = data.position_size.map(v => v === "null" ? null : parseFloat(v));
+            const fedRates = data.fedfunds ? data.fedfunds.map(v => v === "null" ? null : parseFloat(v)) : null;
+
+            const trace1 = {
+                x: dates,
+                y: spreads,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'HY-IG Spread',
+                yaxis: 'y',
+                line: { color: '#667eea' }
+            };
+
+            const trace2 = {
+                x: dates,
+                y: positions,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Position Size',
+                yaxis: 'y2',
+                line: { color: '#28a745' }
+            };
+
+            const traces = [trace1, trace2];
+            
+            // Add FRED Funds Rate trace if available
+            if (fedRates && fedRates.some(v => v !== null)) {
+                const trace3 = {
+                    x: dates,
+                    y: fedRates,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'FRED Funds Rate (%)',
+                    yaxis: 'y3',
+                    line: { color: '#ff6b6b', width: 1.5 }
+                };
+                traces.push(trace3);
+            }
+
+            const layout = {
+                title: 'Strategy Implementation: Spread and Position Size Over Time',
+                xaxis: { 
+                    title: 'Date',
+                    domain: [0, 0.78]
+                },
+                yaxis: { title: 'HY-IG Spread (bps)', side: 'left' },
+                yaxis2: { title: 'Position Size (%)', side: 'right', overlaying: 'y', range: [0, 1.1] },
+                yaxis3: {
+                    title: 'FRED Funds Rate (%)',
+                    side: 'right',
+                    overlaying: 'y',
+                    position: 0.82,
+                    showgrid: false
+                },
+                height: 600,
+                hovermode: 'x unified',
+                shapes: getFedRateShapes(),
+                annotations: getFedRateLegend(),
+                margin: { b: 120, t: 50, l: 60, r: 50 }
+            };
+
+            Plotly.newPlot('strategyChart', traces, layout).catch(err => {
+                console.error('Error plotting strategy chart:', err);
+                container.innerHTML = '<div class="error">Error rendering chart: ' + err.message + '</div>';
+            });
+        }
+        
+        function getFedRateShapes() {
+            if (!strategyData || !strategyData.fed_rate_periods || !Array.isArray(strategyData.fed_rate_periods) || strategyData.fed_rate_periods.length === 0) {
+                return [];
+            }
+            
+            if (!strategyData.monthly_data || !strategyData.monthly_data.dates || strategyData.monthly_data.dates.length === 0) {
+                return [];
+            }
+            
+            const shapes = [];
+            const dates = strategyData.monthly_data.dates;
+            
+            strategyData.fed_rate_periods.forEach(period => {
+                if (!period || !period.start || !period.type) {
+                    return;
+                }
+                
+                const startDate = period.start;
+                const endDate = period.end || dates[dates.length - 1];
+                
+                shapes.push({
+                    type: 'rect',
+                    xref: 'x',
+                    yref: 'paper',
+                    x0: startDate,
+                    x1: endDate,
+                    y0: 0,
+                    y1: 1,
+                    fillcolor: period.type === 'increase' ? 'rgba(255, 192, 203, 0.2)' : 'rgba(144, 238, 144, 0.2)',
+                    line: { width: 0 },
+                    layer: 'below'
+                });
+            });
+            
+            return shapes;
+        }
+
+        function renderCumulativeChart() {
+            const container = document.getElementById('cumulativeChart');
+            if (!container) {
+                console.error('cumulativeChart container not found');
+                return;
+            }
+            
+            if (!strategyData || !strategyData.monthly_data) {
+                container.innerHTML = '<div class="error">Strategy data not available. Run: python strategy_backtest.py</div>';
+                return;
+            }
+            
+            // Clear container before rendering
+            container.innerHTML = '';
+            
+            const data = strategyData.monthly_data;
+            const dates = data.dates;
+            const spyCum = data.spy_cumulative.map(v => v === "null" ? null : parseFloat(v));
+            const stratCum = data.strategy_cumulative.map(v => v === "null" ? null : parseFloat(v));
+            const fedRates = data.fedfunds ? data.fedfunds.map(v => v === "null" ? null : parseFloat(v)) : null;
+
+            const trace1 = {
+                x: dates,
+                y: spyCum,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'SPY Buy & Hold',
+                line: { color: '#667eea' }
+            };
+
+            const trace2 = {
+                x: dates,
+                y: stratCum,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Strategy',
+                line: { color: '#28a745' }
+            };
+
+            const traces = [trace1, trace2];
+            
+            // Add FRED Funds Rate trace if available
+            if (fedRates && fedRates.some(v => v !== null)) {
+                const trace3 = {
+                    x: dates,
+                    y: fedRates,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: 'FRED Funds Rate (%)',
+                    yaxis: 'y2',
+                    line: { color: '#ff6b6b', width: 1.5 }
+                };
+                traces.push(trace3);
+            }
+
+            const layout = {
+                title: 'Cumulative Returns: Strategy vs Buy & Hold (with FRED Rate Changes)',
+                xaxis: { 
+                    title: 'Date',
+                    domain: [0, 0.78]
+                },
+                yaxis: { title: 'Cumulative Return (multiple)', type: 'log' },
+                yaxis2: {
+                    title: 'FRED Funds Rate (%)',
+                    side: 'right',
+                    overlaying: 'y',
+                    position: 0.82,
+                    showgrid: false
+                },
+                height: 600,
+                hovermode: 'x unified',
+                shapes: getFedRateShapes(),
+                annotations: getFedRateLegend(),
+                margin: { b: 120, t: 50, l: 60, r: 50 }
+            };
+
+            Plotly.newPlot('cumulativeChart', traces, layout).catch(err => {
+                console.error('Error plotting cumulative chart:', err);
+                container.innerHTML = '<div class="error">Error rendering chart: ' + err.message + '</div>';
+            });
+        }
+        
+        function getFedRateLegend() {
+            // Add legend annotations below the X-axis
+            return [
+                {
+                    x: 0.5,
+                    y: -0.12,
+                    xref: 'paper',
+                    yref: 'paper',
+                    text: '<span style="background-color: rgba(255, 192, 203, 0.3); padding: 2px 8px; border-radius: 3px;"><span style="color: #d63384; font-weight: bold;">Pink</span> = Rate Increase</span>  <span style="background-color: rgba(144, 238, 144, 0.3); padding: 2px 8px; border-radius: 3px; margin-left: 10px;"><span style="color: #198754; font-weight: bold;">Green</span> = Rate Decrease</span>',
+                    showarrow: false,
+                    font: { size: 12 },
+                    align: 'center',
+                    xanchor: 'center',
+                    yanchor: 'top'
+                }
+            ];
+        }
+
+        function renderDrawdownChart() {
+            const container = document.getElementById('drawdownChart');
+            if (!container) {
+                console.error('drawdownChart container not found');
+                return;
+            }
+            
+            if (!strategyData || !strategyData.monthly_data) {
+                container.innerHTML = '<div class="error">Strategy data not available. Run: python strategy_backtest.py</div>';
+                return;
+            }
+            
+            // Clear container before rendering
+            container.innerHTML = '';
+            
+            const data = strategyData.monthly_data;
+            const dates = data.dates;
+            const spyDD = data.spy_drawdown.map(v => v === "null" ? null : parseFloat(v));
+            const stratDD = data.strategy_drawdown.map(v => v === "null" ? null : parseFloat(v));
+
+            const trace1 = {
+                x: dates,
+                y: spyDD,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'SPY Drawdown',
+                fill: 'tozeroy',
+                line: { color: '#667eea' }
+            };
+
+            const trace2 = {
+                x: dates,
+                y: stratDD,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Strategy Drawdown',
+                fill: 'tozeroy',
+                line: { color: '#28a745' }
+            };
+
+            const layout = {
+                title: 'Drawdown Analysis',
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'Drawdown (%)' },
+                height: 600,
+                hovermode: 'x unified'
+            };
+
+            Plotly.newPlot('drawdownChart', [trace1, trace2], layout);
+        }
+        
+        function renderCurrentStrategyReview() {
+            const review = strategyData.current_strategy_review;
+            if (!review || review.length === 0) {
+                document.getElementById('currentStrategyReview').innerHTML = 
+                    '<div class="error">No review data available</div>';
+                return;
+            }
+            
+            // Filter to only show records with actions
+            const actionRecords = review.filter(r => r.has_action);
+            
+            let html = '<div style="max-height: 500px; overflow-y: auto;">';
+            html += '<table style="width: 100%; font-size: 0.9em;">';
+            html += '<tr><th>Date</th><th>Regime</th><th>Spread (bps)</th><th>Position Size</th><th>Action</th><th>View Chart</th></tr>';
+            
+            review.forEach(record => {
+                const dateStr = new Date(record.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                const actionClass = record.has_action ? 'action-row' : '';
+                const actionText = record.action || '-';
+                const actionIcon = record.action === 'Increase Position' ? '↑' : 
+                                 record.action === 'Decrease Position' ? '↓' : '';
+                
+                html += `<tr class="${actionClass}">`;
+                html += `<td>${dateStr}</td>`;
+                html += `<td>${record.regime}</td>`;
+                html += `<td>${record.spread !== null ? record.spread.toFixed(2) : 'N/A'}</td>`;
+                html += `<td>${record.position_size !== null ? (record.position_size * 100).toFixed(0) + '%' : 'N/A'}</td>`;
+                html += `<td>${actionIcon} ${actionText}</td>`;
+                
+                if (record.has_action) {
+                    html += `<td><button class="view-period-btn" onclick="viewPeriodChart('${record.date}')">View Chart</button></td>`;
+                } else {
+                    html += '<td>-</td>';
+                }
+                
+                html += '</tr>';
+            });
+            
+            html += '</table>';
+            html += '<p style="margin-top: 15px; font-size: 0.85em; color: #666;">';
+            html += '<strong>Legend:</strong> ';
+            html += '<span style="background: rgba(40, 167, 69, 0.1); padding: 2px 6px; border-radius: 3px;">↑ Increase Position</span> ';
+            html += '<span style="background: rgba(220, 53, 69, 0.1); padding: 2px 6px; border-radius: 3px; margin-left: 10px;">↓ Decrease Position</span>';
+            html += '</p>';
+            html += '</div>';
+            
+            document.getElementById('currentStrategyReview').innerHTML = html;
+        }
+        
+        function viewPeriodChart(periodDate) {
+            // Find the period in the data
+            const dates = strategyData.monthly_data.dates;
+            const dateIndex = dates.findIndex(d => d.startsWith(periodDate.substring(0, 7))); // Match by year-month
+            
+            if (dateIndex === -1) {
+                alert('Period data not found');
+                return;
+            }
+            
+            // Show a 3-month window around the action
+            const startIdx = Math.max(0, dateIndex - 1);
+            const endIdx = Math.min(dates.length - 1, dateIndex + 1);
+            
+            const periodDates = dates.slice(startIdx, endIdx + 1);
+            const periodSpreads = strategyData.monthly_data.spread.slice(startIdx, endIdx + 1)
+                .map(v => v === "null" ? null : parseFloat(v));
+            const periodSpy = strategyData.monthly_data.spy_returns.slice(startIdx, endIdx + 1)
+                .map(v => v === "null" ? null : parseFloat(v));
+            
+            // Create a modal or new chart
+            const modal = document.createElement('div');
+            modal.id = 'periodModal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+            
+            const closeModal = () => {
+                const modalEl = document.getElementById('periodModal');
+                if (modalEl) {
+                    modalEl.remove();
+                }
+            };
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 30px; border-radius: 10px; max-width: 90%; max-height: 90%; overflow: auto; position: relative;">
+                    <button id="closePeriodModal" 
+                            style="position: absolute; top: 10px; right: 10px; background: #dc3545; color: white; border: none; border-radius: 5px; padding: 8px 16px; cursor: pointer; font-size: 14px; font-weight: bold;">✕ Close</button>
+                    <h3>Period Analysis: ${new Date(periodDate).toLocaleDateString()}</h3>
+                    <div id="periodChart" style="width: 800px; height: 400px;"></div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Add event listener for close button
+            const closeBtn = document.getElementById('closePeriodModal');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeModal);
+            }
+            
+            // Close on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            // Render chart
+            const trace1 = {
+                x: periodDates,
+                y: periodSpreads,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'HY-IG Spread',
+                yaxis: 'y',
+                line: { color: '#667eea' },
+                marker: { size: 8 }
+            };
+            
+            const trace2 = {
+                x: periodDates,
+                y: periodSpy,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'SPY Returns (%)',
+                yaxis: 'y2',
+                line: { color: '#28a745' },
+                marker: { size: 8 }
+            };
+            
+            // Add arrow annotation for action
+            const actionDate = periodDates[Math.floor(periodDates.length / 2)];
+            const annotations = [{
+                x: actionDate,
+                y: Math.max(...periodSpreads.filter(v => v !== null)),
+                xref: 'x',
+                yref: 'y',
+                text: 'Action Point',
+                showarrow: true,
+                arrowhead: 2,
+                arrowsize: 1.5,
+                arrowwidth: 2,
+                arrowcolor: '#dc3545',
+                bgcolor: 'rgba(255, 255, 255, 0.8)',
+                bordercolor: '#dc3545',
+                borderwidth: 1
+            }];
+            
+            const layout = {
+                title: `HY-IG Spread and S&P Performance: ${periodDates[0]} to ${periodDates[periodDates.length - 1]}`,
+                xaxis: { title: 'Date' },
+                yaxis: { title: 'HY-IG Spread (bps)', side: 'left' },
+                yaxis2: { title: 'SPY Returns (%)', side: 'right', overlaying: 'y' },
+                height: 400,
+                hovermode: 'x unified',
+                annotations: annotations
+            };
+            
+            Plotly.newPlot('periodChart', [trace1, trace2], layout);
+        }
+        
+        function renderFedRateAnalysis() {
+            const fedMetrics = strategyData.performance_metrics.fed_rate_periods;
+            if (!fedMetrics || Object.keys(fedMetrics).length === 0) {
+                document.getElementById('fedRateAnalysis').innerHTML = 
+                    '<div class="error">FRED rate period analysis not available</div>';
+                return;
+            }
+            
+            let html = '<h4>Performance by FRED Funds Rate Change Periods</h4>';
+            html += '<table style="width: 100%;">';
+            html += '<tr><th>Rate Period</th><th>Months</th><th>Strategy Return</th><th>SPY Return</th><th>Strategy Sharpe</th><th>SPY Sharpe</th><th>Strategy Max DD</th><th>SPY Max DD</th></tr>';
+            
+            const periodLabels = {
+                'increase': 'Rate Increase Periods',
+                'decrease': 'Rate Decrease Periods',
+                'none': 'No Change Periods',
+                'rate_above_2.5': 'Fed Funds Rate ≥ 2.5%',
+                'rate_below_2.5': 'Fed Funds Rate < 2.5%'
+            };
+            
+            // First show rate change periods
+            ['increase', 'decrease', 'none'].forEach(periodType => {
+                if (fedMetrics[periodType]) {
+                    const m = fedMetrics[periodType];
+                    html += '<tr>';
+                    html += `<td><strong>${periodLabels[periodType]}</strong></td>`;
+                    html += `<td>${m.n_months}</td>`;
+                    html += `<td>${m.strategy.annualized_return.toFixed(2)}%</td>`;
+                    html += `<td>${m.spy.annualized_return.toFixed(2)}%</td>`;
+                    html += `<td>${m.strategy.sharpe_ratio.toFixed(2)}</td>`;
+                    html += `<td>${m.spy.sharpe_ratio.toFixed(2)}</td>`;
+                    html += `<td>${m.strategy.max_drawdown.toFixed(2)}%</td>`;
+                    html += `<td>${m.spy.max_drawdown.toFixed(2)}%</td>`;
+                    html += '</tr>';
+                }
+            });
+            
+            // Add separator row
+            html += '<tr style="background-color: #f0f0f0;"><td colspan="8" style="text-align: center; font-weight: bold; padding: 10px;">Rate Level Analysis</td></tr>';
+            
+            // Then show rate level periods
+            ['rate_above_2.5', 'rate_below_2.5'].forEach(periodType => {
+                if (fedMetrics[periodType]) {
+                    const m = fedMetrics[periodType];
+                    html += '<tr>';
+                    html += `<td><strong>${periodLabels[periodType]}</strong></td>`;
+                    html += `<td>${m.n_months}</td>`;
+                    html += `<td>${m.strategy.annualized_return.toFixed(2)}%</td>`;
+                    html += `<td>${m.spy.annualized_return.toFixed(2)}%</td>`;
+                    html += `<td>${m.strategy.sharpe_ratio.toFixed(2)}</td>`;
+                    html += `<td>${m.spy.sharpe_ratio.toFixed(2)}</td>`;
+                    html += `<td>${m.strategy.max_drawdown.toFixed(2)}%</td>`;
+                    html += `<td>${m.spy.max_drawdown.toFixed(2)}%</td>`;
+                    html += '</tr>';
+                }
+            });
+            
+            html += '</table>';
+            
+            // Add analysis commentary
+            html += '<div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 4px solid #667eea;">';
+            html += '<h4>Fundamental & Technical Analysis</h4>';
+            
+            if (fedMetrics.increase && fedMetrics.decrease) {
+                const incPerf = fedMetrics.increase.strategy.annualized_return;
+                const decPerf = fedMetrics.decrease.strategy.annualized_return;
+                const incSharpe = fedMetrics.increase.strategy.sharpe_ratio;
+                const decSharpe = fedMetrics.decrease.strategy.sharpe_ratio;
+                const incDD = fedMetrics.increase.strategy.max_drawdown;
+                const decDD = fedMetrics.decrease.strategy.max_drawdown;
+                
+                html += '<p><strong>Key Findings:</strong></p>';
+                html += '<ul>';
+                
+                if (incPerf > decPerf) {
+                    html += `<li><strong>Return Performance:</strong> Strategy performs better during rate increase periods (${incPerf.toFixed(2)}% vs ${decPerf.toFixed(2)}%). This suggests the HY-IG spread strategy is more effective when rates are rising, likely due to credit stress being more pronounced.</li>`;
+                } else {
+                    html += `<li><strong>Return Performance:</strong> Strategy performs better during rate decrease periods (${decPerf.toFixed(2)}% vs ${incPerf.toFixed(2)}%). Rate cuts typically signal economic support, which benefits credit spreads.</li>`;
+                }
+                
+                if (incSharpe > decSharpe) {
+                    html += `<li><strong>Risk-Adjusted Returns:</strong> Higher Sharpe ratio during rate increases (${incSharpe.toFixed(2)} vs ${decSharpe.toFixed(2)}), indicating better risk-adjusted performance when rates rise.</li>`;
+                } else {
+                    html += `<li><strong>Risk-Adjusted Returns:</strong> Higher Sharpe ratio during rate decreases (${decSharpe.toFixed(2)} vs ${incSharpe.toFixed(2)}), indicating better risk-adjusted performance when rates fall.</li>`;
+                }
+                
+                if (Math.abs(incDD) < Math.abs(decDD)) {
+                    html += `<li><strong>Drawdown Control:</strong> Strategy shows better drawdown control during rate increases (${incDD.toFixed(2)}% vs ${decDD.toFixed(2)}%), demonstrating defensive positioning effectiveness.</li>`;
+                } else {
+                    html += `<li><strong>Drawdown Control:</strong> Strategy shows better drawdown control during rate decreases (${decDD.toFixed(2)}% vs ${incDD.toFixed(2)}%).</li>`;
+                }
+                
+                html += '<li><strong>Technical Insight:</strong> The HY-IG spread indicator acts as a risk filter that adapts to monetary policy changes. When rates increase, credit spreads typically widen, triggering defensive positioning in the strategy.</li>';
+                html += '<li><strong>Fundamental Insight:</strong> Federal Reserve policy directly impacts credit markets. Rate increases tighten financial conditions, increasing default risk and widening spreads, which our strategy captures through regime-based position sizing.</li>';
+                
+                html += '</ul>';
+            }
+            
+            html += '</div>';
+            
+            document.getElementById('fedRateAnalysis').innerHTML = html;
+        }
+
+        // Make viewPeriodChart globally accessible
+        window.viewPeriodChart = viewPeriodChart;
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', loadAllData);
+    </script>
+</body>
+</html>

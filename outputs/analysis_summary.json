@@ -1,0 +1,54 @@
+{
+  "analysis_date": "2026-01-11T09:21:22.035168",
+  "data_period": {
+    "start": "1996-12-31 00:00:00",
+    "end": "2025-12-31 00:00:00",
+    "n_months": 349
+  },
+  "correlation_summary": {
+    "level_correlation": -0.23904860477202441,
+    "n_significant": 20
+  },
+  "lead_lag": {
+    "best_lag": 1,
+    "best_correlation": -0.30656309323292136
+  },
+  "predictive_modeling": {
+    "mean_r2": -0.36498399160881817,
+    "top_features": [
+      "HY_IG_Spread_lag1",
+      "HY_IG_Spread_lag2",
+      "HY_IG_Spread_lag5"
+    ]
+  },
+  "regime_analysis": {
+    "Q1 (Lowest)": {
+      "count": 87,
+      "mean": 1.976,
+      "std": 2.9804,
+      "sum": 171.9154,
+      "sharpe": 2.2966933269065235
+    },
+    "Q2": {
+      "count": 87,
+      "mean": 1.3738,
+      "std": 3.3987,
+      "sum": 119.5219,
+      "sharpe": 1.4002362076312256
+    },
+    "Q3": {
+      "count": 87,
+      "mean": 0.6757,
+      "std": 4.4308,
+      "sum": 58.7817,
+      "sharpe": 0.5282778417776882
+    },
+    "Q4 (Highest)": {
+      "count": 87,
+      "mean": -0.479,
+      "std": 5.9624,
+      "sum": -41.6753,
+      "sharpe": -0.27829475943428555
+    }
+  }
+}
