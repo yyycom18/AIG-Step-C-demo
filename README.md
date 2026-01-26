@@ -63,12 +63,22 @@ python analysis.py
 python strategy_backtest.py
 ```
 
-### 6. Run the Website
+### 6. Run the Website (Local)
 ```bash
 python run_server.py
 ```
 
 Then open browser to: http://localhost:8001
+
+### 7. Deploy to Streamlit Cloud (Share with Team)
+See `DEPLOY_STREAMLIT.md` for detailed instructions.
+
+Quick steps:
+1. Sign up at https://streamlit.io/cloud
+2. Connect your GitHub account
+3. Deploy from repository: `yyycom18/AIG-Step-C-demo`
+4. Main file: `streamlit_app.py`
+5. Share the URL with your teammates!
 
 ## Project Structure
 ```
