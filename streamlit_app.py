@@ -40,9 +40,22 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Paths: app lives in Project03; Project02 is sibling
+# Paths: app lives in Project03; Project02 may be sibling or under cwd
 PROJECT03_PATH = Path(__file__).resolve().parent
-PROJECT02_PATH = PROJECT03_PATH.parent / "Project02"
+
+
+def _project02_base():
+    """Resolve Project02 base path: try sibling of Project03, then cwd, then cwd/Project02."""
+    candidates = [
+        PROJECT03_PATH.parent / "Project02",   # sibling: .../Cursor/Project02
+        Path.cwd() / "Project02",              # e.g. run from Cursor -> Cursor/Project02
+        Path.cwd(),                            # if cwd is already Project02
+        PROJECT03_PATH / "Project02",          # Project02 inside Project03 (alternate layout)
+    ]
+    for base in candidates:
+        if base is not None and (base / "data" / "vix_data.json").exists():
+            return base
+    return PROJECT03_PATH.parent / "Project02"  # fallback for error messages
 
 
 @st.cache_data
@@ -68,11 +81,14 @@ def load_data(study: str):
         return monthly_data, analysis_data, strategy_data
 
     if study == "p02":
-        base = PROJECT02_PATH
+        base = _project02_base()
+        vix_path = base / "data" / "vix_data.json"
         try:
-            with open(base / "data" / "vix_data.json", "r") as f:
+            with open(vix_path, "r") as f:
                 vix_data = json.load(f)
         except FileNotFoundError:
+            return None, None, None
+        except Exception:
             return None, None, None
         # Normalize to same shape: monthly_data has stats + monthly; no analysis/strategy for p02
         return vix_data, None, None
@@ -174,7 +190,15 @@ if selected_section == "Home":
 
 # After Home: require a study and (for p03) at least monthly_data
 if monthly_data is None:
-    st.warning("Data not found for this study. For Project 02 run `fetch_vix_data.py` in Project02; for Project 03 ensure `data/hyig_data.json` and optionally `outputs/` exist in Project03.")
+    if study == "p02":
+        tried = _project02_base() / "data" / "vix_data.json"
+        st.warning(
+            f"**Data not found for Project 02.** Ensure `data/vix_data.json` exists. "
+            f"Run `fetch_vix_data.py` inside the Project02 folder. "
+            f"App looked for: `{tried}`"
+        )
+    else:
+        st.warning("Data not found for Project 03. Ensure `data/hyig_data.json` exists (run `fetch_data.py` in Project03).")
     st.stop()
 
 # Dynamic header by study
