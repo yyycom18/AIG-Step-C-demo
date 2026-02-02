@@ -81,16 +81,19 @@ def load_data(study: str):
         return monthly_data, analysis_data, strategy_data
 
     if study == "p02":
+        # Try standard layout: Project02 as sibling (or under cwd)
         base = _project02_base()
         vix_path = base / "data" / "vix_data.json"
+        # Fallback: Streamlit Cloud when repo root is Project03 – use Project03/data_p02/vix_data.json
+        alt_path = PROJECT03_PATH / "data_p02" / "vix_data.json"
+        path_to_try = vix_path if vix_path.exists() else alt_path
         try:
-            with open(vix_path, "r") as f:
+            with open(path_to_try, "r") as f:
                 vix_data = json.load(f)
         except FileNotFoundError:
             return None, None, None
         except Exception:
             return None, None, None
-        # Normalize to same shape: monthly_data has stats + monthly; no analysis/strategy for p02
         return vix_data, None, None
 
     return None, None, None
@@ -191,12 +194,14 @@ if selected_section == "Home":
 # After Home: require a study and (for p03) at least monthly_data
 if monthly_data is None:
     if study == "p02":
-        tried = _project02_base() / "data" / "vix_data.json"
+        tried_std = _project02_base() / "data" / "vix_data.json"
+        tried_alt = PROJECT03_PATH / "data_p02" / "vix_data.json"
         st.warning(
-            f"**Data not found for Project 02.** Ensure `data/vix_data.json` exists. "
-            f"Run `fetch_vix_data.py` inside the Project02 folder. "
-            f"App looked for: `{tried}`"
+            "**Data not found for Project 02.** "
+            "On **Streamlit Cloud** (app root = Project03), copy `Project02/data/vix_data.json` to **`Project03/data_p02/vix_data.json`**, commit, and redeploy. "
+            "See `Project03/data_p02/README.md` for steps."
         )
+        st.caption(f"Paths checked: `{tried_std}` and `{tried_alt}`")
     else:
         st.warning("Data not found for Project 03. Ensure `data/hyig_data.json` exists (run `fetch_data.py` in Project03).")
     st.stop()
