@@ -815,6 +815,39 @@ elif selected_section == "Strategy Sandbox":
     elif result and result.get("error"):
         st.error(result["error"])
 
+    # ---------- Strategy Ranking Panel (add-on; informational only) ----------
+    st.divider()
+    st.subheader("🔍 Strategy Ranking Panel")
+    st.caption("Top 10 strategy combinations from predefined grid (75 combinations). Excluded by guardrail: Trades < 5 or % Time in Market < 5%.")
+    if st.button("Compute Top 10", key="sandbox_ranking_run"):
+        try:
+            from sandbox_engine import run_ranking_grid
+        except ImportError:
+            from Project03.sandbox_engine import run_ranking_grid
+        with st.spinner("Running 75 combinations…"):
+            top10, n_excluded = run_ranking_grid(
+                indicator_series,
+                etf_return_series,
+                date_min=date_min_avail,
+                date_max=date_max_avail,
+                z_window=60,
+            )
+        st.session_state["sandbox_ranking"] = {"top10": top10, "n_excluded": n_excluded}
+        st.rerun()
+    ranking = st.session_state.get("sandbox_ranking")
+    if ranking:
+        top10 = ranking["top10"]
+        n_excluded = ranking["n_excluded"]
+        if n_excluded > 0:
+            st.caption(f"Combinations excluded by guardrail (Trades < 5 or Time in Market < 5%): {n_excluded}.")
+        if top10:
+            rank_df = pd.DataFrame(top10)
+            st.dataframe(rank_df, use_container_width=True, hide_index=True)
+        else:
+            st.info("No combinations passed the guardrail (all had Trades < 5 or % Time in Market < 5%). Try a different date range or indicator.")
+    else:
+        st.info("Click **Compute Top 10** to run the predefined grid (Raw, Z-score, Percentile, Momentum 1M/3M × Top 80%, Bottom 20%, Cross Median, Z>+1, Z<-1 × Long Only, Risk Reduction, Defensive).")
+
 # Footer
 st.markdown("---")
 if study == "p03":

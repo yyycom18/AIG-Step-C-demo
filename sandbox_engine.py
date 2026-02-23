@@ -326,3 +326,119 @@ def run_sandbox(
             "date_max": str(date_max) if date_max is not None else None,
         },
     }
+
+
+# ---------- Ranking Grid (Predefined combinations, fixed; ≤75) ----------
+# Transformation list: Raw, Z-score, Percentile, Momentum_1M, Momentum_3M
+RANKING_TRANSFORMATIONS = ["Raw Level", "Z-score", "Percentile Rank", "Momentum 1M", "Momentum 3M"]
+# Threshold list: Top 80%, Bottom 20%, Cross Median, Z > +1, Z < -1 (fixed params)
+RANKING_THRESHOLDS = [
+    ("Above X percentile", 80.0, 30.0),
+    ("Below X percentile", 70.0, 20.0),
+    ("Cross Median", 70.0, 30.0),
+    ("Z-score > +1", 70.0, 30.0),
+    ("Z-score < -1", 70.0, 30.0),
+]
+RANKING_POSITIONS = [
+    "Long Only (In/Out)",
+    "Risk Reduction (50% exposure)",
+    "Full Defensive (0% exposure)",
+]
+
+# Composite score weights (not user-modifiable v1)
+SCORE_W_SHARPE = 0.5
+SCORE_W_DD = 0.3
+SCORE_W_CAGR = 0.2
+
+
+def _composite_score(metrics: Dict[str, Any]) -> float:
+    """
+    Sharpe_Improvement = Strategy_Sharpe - Benchmark_Sharpe
+    Drawdown_Improvement = Strategy_MaxDD - Benchmark_MaxDD (less negative = better)
+    CAGR_Improvement = Strategy_CAGR - Benchmark_CAGR
+    Composite_Score = 0.5*Sharpe_Imp + 0.3*DD_Imp + 0.2*CAGR_Imp
+    """
+    s = metrics.get("strategy", {})
+    b = metrics.get("benchmark", {})
+    sharpe_imp = s.get("sharpe_ratio", 0) - b.get("sharpe_ratio", 0)
+    dd_imp = s.get("max_drawdown", 0) - b.get("max_drawdown", 0)  # both negative; higher = better
+    cagr_imp = s.get("cagr", 0) - b.get("cagr", 0)
+    return SCORE_W_SHARPE * sharpe_imp + SCORE_W_DD * dd_imp + SCORE_W_CAGR * cagr_imp
+
+
+def run_ranking_grid(
+    indicator_series: pd.Series,
+    etf_return_series: pd.Series,
+    date_min: Optional[pd.Timestamp] = None,
+    date_max: Optional[pd.Timestamp] = None,
+    z_window: int = DEFAULT_Z_WINDOW,
+) -> Tuple[list, int]:
+    """
+    Auto-run predefined combinations; apply guardrail (exclude if Trades<5 or %Time_in_Market<5%);
+    sort by composite score descending; return (top_10_list, n_excluded).
+    Each item in top_10_list: dict with Rank, Transform, Threshold, Position, Sharpe, DD, CAGR, Trades, Score.
+    """
+    rows = []
+    excluded = 0
+    for transformation in RANKING_TRANSFORMATIONS:
+        for thresh_tup in RANKING_THRESHOLDS:
+            threshold_rule, above_pct, below_pct = thresh_tup
+            for position_mode in RANKING_POSITIONS:
+                res = run_sandbox(
+                    indicator_series,
+                    etf_return_series,
+                    transformation=transformation,
+                    threshold_rule=threshold_rule,
+                    position_mode=position_mode,
+                    above_pct=above_pct,
+                    below_pct=below_pct,
+                    z_window=z_window,
+                    date_min=date_min,
+                    date_max=date_max,
+                )
+                if res.get("error"):
+                    excluded += 1
+                    continue
+                met = res["evaluation_metrics"]
+                ss = res["sample_size_metrics"]
+                n_trades = ss.get("n_trades", 0)
+                pct_market = ss.get("pct_time_in_market", 0)
+                if n_trades < 5 or pct_market < 5.0:
+                    excluded += 1
+                    continue
+                score = _composite_score(met)
+                # Display names for threshold (spec: Top 80%, Bottom 20%, etc.)
+                thresh_label = threshold_rule
+                if threshold_rule == "Above X percentile" and above_pct == 80:
+                    thresh_label = "Top 80%"
+                elif threshold_rule == "Below X percentile" and below_pct == 20:
+                    thresh_label = "Bottom 20%"
+                elif threshold_rule == "Z-score > +1":
+                    thresh_label = "Z > +1"
+                elif threshold_rule == "Z-score < -1":
+                    thresh_label = "Z < -1"
+                rows.append({
+                    "transform": transformation,
+                    "threshold": thresh_label,
+                    "position": position_mode,
+                    "sharpe": met["strategy"]["sharpe_ratio"],
+                    "dd": met["strategy"]["max_drawdown"],
+                    "cagr": met["strategy"]["cagr"],
+                    "trades": n_trades,
+                    "score": score,
+                })
+    rows.sort(key=lambda x: x["score"], reverse=True)
+    top10 = []
+    for r, row in enumerate(rows[:10], start=1):
+        top10.append({
+            "Rank": r,
+            "Transform": row["transform"],
+            "Threshold": row["threshold"],
+            "Position": row["position"],
+            "Sharpe": round(row["sharpe"], 2),
+            "DD": round(row["dd"], 2),
+            "CAGR": round(row["cagr"], 2),
+            "Trades": row["trades"],
+            "Score": round(row["score"], 2),
+        })
+    return top10, excluded
