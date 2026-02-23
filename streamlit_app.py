@@ -621,14 +621,129 @@ elif selected_section == "Strategy Sandbox":
     date_min_avail = indicator_series.index.min()
     date_max_avail = indicator_series.index.max()
 
-    # Top Panel — Strategy Configuration
+    # ---------- 1️⃣ Ranking Panel (Top) ----------
+    st.subheader("🔍 Top 10 Strategy Combinations")
+    st.caption("Predefined grid (75 combinations). Excluded from ranking: Trades < 5 or % Time in Market < 5%.")
+    if st.button("Compute Top 10", key="sandbox_ranking_run"):
+        try:
+            from sandbox_engine import run_ranking_grid
+        except ImportError:
+            from Project03.sandbox_engine import run_ranking_grid
+        with st.spinner("Running 75 combinations…"):
+            top10, n_excluded = run_ranking_grid(
+                indicator_series,
+                etf_return_series,
+                date_min=date_min_avail,
+                date_max=date_max_avail,
+                z_window=60,
+            )
+        st.session_state["sandbox_ranking"] = {"top10": top10, "n_excluded": n_excluded}
+        st.rerun()
+    ranking = st.session_state.get("sandbox_ranking")
+    if ranking:
+        top10 = ranking["top10"]
+        n_excluded = ranking["n_excluded"]
+        if n_excluded > 0:
+            st.caption(f"Combinations excluded by guardrail: {n_excluded}.")
+        if top10:
+            rank_df = pd.DataFrame([{k: v for k, v in row.items() if k in ["Rank", "Transform", "Threshold", "Position", "Sharpe", "DD", "CAGR", "Trades", "Score"]} for row in top10])
+            st.dataframe(rank_df, use_container_width=True, hide_index=True)
+            # Load buttons: one per row
+            try:
+                from sandbox_engine import run_sandbox
+            except ImportError:
+                from Project03.sandbox_engine import run_sandbox
+            load_cols = st.columns(10)
+            for i, col in enumerate(load_cols):
+                with col:
+                    if i < len(top10):
+                        row = top10[i]
+                        if st.button(f"Load #{i+1}", key=f"sandbox_load_{i}"):
+                            res = run_sandbox(
+                                indicator_series,
+                                etf_return_series,
+                                transformation=row["Transform"],
+                                threshold_rule=row["threshold_rule"],
+                                position_mode=row["Position"],
+                                above_pct=row["above_pct"],
+                                below_pct=row["below_pct"],
+                                z_window=60,
+                                date_min=date_min_avail,
+                                date_max=date_max_avail,
+                            )
+                            if not res.get("error"):
+                                st.session_state["sandbox_result"] = res
+                                st.session_state["sandbox_preset"] = {
+                                    "transformation": row["Transform"],
+                                    "threshold_rule": row["threshold_rule"],
+                                    "above_pct": row["above_pct"],
+                                    "below_pct": row["below_pct"],
+                                    "position_mode": row["Position"],
+                                }
+                            st.rerun()
+        else:
+            st.info("No combinations passed the guardrail. Try a different date range or indicator.")
+    else:
+        st.info("Click **Compute Top 10** to run the predefined grid.")
+
+    # ---------- 2️⃣ Ranking Logic Explanation Block ----------
+    with st.expander("📘 How Strategy Score is Calculated", expanded=False):
+        st.markdown("""
+**1️⃣ Conceptual explanation**
+
+The Top 10 combinations are ranked based on a **Composite Strategy Score**.
+
+This score evaluates how much a strategy *improves* relative to the benchmark (ETF Buy & Hold).
+
+The goal is not to maximize return alone, but to identify strategies that improve **risk-adjusted** performance.
+
+---
+**2️⃣ Formula**
+
+- **Sharpe Improvement** = Strategy Sharpe − Benchmark Sharpe  
+- **Drawdown Improvement** = Benchmark Max Drawdown − Strategy Max Drawdown  
+- **CAGR Improvement** = Strategy CAGR − Benchmark CAGR  
+
+**Composite Score** =  
+0.5 × Sharpe Improvement + 0.3 × Drawdown Improvement + 0.2 × CAGR Improvement  
+
+---
+**3️⃣ Why these weights?**
+
+- **50% Sharpe Improvement:** Risk-adjusted return is prioritized over raw return.
+- **30% Drawdown Improvement:** Capital protection and downside control are important.
+- **20% CAGR Improvement:** Return improvement matters, but not at the expense of risk stability.
+
+---
+**4️⃣ Guardrail**
+
+Strategies with **insufficient sample size** are excluded from ranking.
+
+**Conditions:**  
+- Minimum **5 trades**  
+- Minimum **5% time in market**  
+
+This helps prevent overfitting and unstable results.
+""")
+
+    # ---------- 3️⃣ Manual Strategy Configuration Panel ----------
+    preset = st.session_state.get("sandbox_preset") or {}
+    TRANSFORM_OPTS = ["Raw Level", "Z-score", "Percentile Rank", "Momentum 1M", "Momentum 3M", "Momentum 6M", "Rate of Change"]
+    THRESH_OPTS = ["Above X percentile", "Below X percentile", "Cross Median", "Z-score > +1", "Z-score < -1", "Momentum > 0"]
+    POSITION_OPTS = ["Long Only (In/Out)", "Risk Reduction (50% exposure)", "Full Defensive (0% exposure)"]
+    idx_transform = TRANSFORM_OPTS.index(preset["transformation"]) if preset.get("transformation") in TRANSFORM_OPTS else 0
+    idx_thresh = THRESH_OPTS.index(preset["threshold_rule"]) if preset.get("threshold_rule") in THRESH_OPTS else 0
+    idx_pos = POSITION_OPTS.index(preset["position_mode"]) if preset.get("position_mode") in POSITION_OPTS else 0
+    default_above = int(preset.get("above_pct", 70))
+    default_below = int(preset.get("below_pct", 30))
+
     with st.expander("Strategy Configuration", expanded=True):
         c1, c2, c3 = st.columns(3)
         with c1:
             transformation = st.selectbox(
                 "Transformation",
-                ["Raw Level", "Z-score", "Percentile Rank", "Momentum 1M", "Momentum 3M", "Momentum 6M", "Rate of Change"],
-                index=0,
+                TRANSFORM_OPTS,
+                index=idx_transform,
                 key="sandbox_transform",
             )
             with st.expander("What does this mean? — Transformation (i)", expanded=False):
@@ -644,8 +759,8 @@ elif selected_section == "Strategy Sandbox":
         with c2:
             threshold_rule = st.selectbox(
                 "Threshold",
-                ["Above X percentile", "Below X percentile", "Cross Median", "Z-score > +1", "Z-score < -1", "Momentum > 0"],
-                index=0,
+                THRESH_OPTS,
+                index=idx_thresh,
                 key="sandbox_thresh",
             )
             with st.expander("What does this mean? — Threshold (i)", expanded=False):
@@ -655,17 +770,17 @@ elif selected_section == "Strategy Sandbox":
                     st.markdown("**Interpretation**  \n" + g2.get("interpretation", ""))
                     st.markdown("**Tested behaviour**  \n" + g2.get("tested_behaviour", ""))
                     st.markdown("**Risk**  \n" + g2.get("risk", ""))
-            above_pct = 70.0
-            below_pct = 30.0
+            above_pct = default_above
+            below_pct = default_below
             if threshold_rule == "Above X percentile":
-                above_pct = st.slider("Percentile (above)", 50, 95, 70, key="sandbox_above")
+                above_pct = st.slider("Percentile (above)", 50, 95, int(default_above), key="sandbox_above")
             elif threshold_rule == "Below X percentile":
-                below_pct = st.slider("Percentile (below)", 5, 50, 30, key="sandbox_below")
+                below_pct = st.slider("Percentile (below)", 5, 50, int(default_below), key="sandbox_below")
         with c3:
             position_mode = st.selectbox(
                 "Position Logic",
-                ["Long Only (In/Out)", "Risk Reduction (50% exposure)", "Full Defensive (0% exposure)"],
-                index=0,
+                POSITION_OPTS,
+                index=idx_pos,
                 key="sandbox_pos",
             )
             with st.expander("What does this mean? — Position (i)", expanded=False):
@@ -674,7 +789,6 @@ elif selected_section == "Strategy Sandbox":
                     st.markdown("**Meaning**  \n" + g3.get("meaning", ""))
                     st.markdown("**Use case**  \n" + g3.get("use_case", ""))
                     st.markdown("**Risk**  \n" + g3.get("risk", ""))
-        # Dynamic line: what the user is currently testing
         _thresh_short = {"Above X percentile": "extreme high regime", "Below X percentile": "extreme low regime", "Cross Median": "regime shift", "Z-score > +1": "extended high regime", "Z-score < -1": "extended low regime", "Momentum > 0": "positive momentum"}
         _pos_short = {"Long Only (In/Out)": "tactical exposure", "Risk Reduction (50% exposure)": "risk overlay", "Full Defensive (0% exposure)": "stress avoidance"}
         _trans_short = {"Raw Level": "indicator level", "Z-score": "indicator deviation", "Percentile Rank": "indicator percentile", "Momentum 1M": "1M momentum", "Momentum 3M": "3M momentum", "Momentum 6M": "6M momentum", "Rate of Change": "rate of change"}
@@ -814,39 +928,6 @@ elif selected_section == "Strategy Sandbox":
         )
     elif result and result.get("error"):
         st.error(result["error"])
-
-    # ---------- Strategy Ranking Panel (add-on; informational only) ----------
-    st.divider()
-    st.subheader("🔍 Strategy Ranking Panel")
-    st.caption("Top 10 strategy combinations from predefined grid (75 combinations). Excluded by guardrail: Trades < 5 or % Time in Market < 5%.")
-    if st.button("Compute Top 10", key="sandbox_ranking_run"):
-        try:
-            from sandbox_engine import run_ranking_grid
-        except ImportError:
-            from Project03.sandbox_engine import run_ranking_grid
-        with st.spinner("Running 75 combinations…"):
-            top10, n_excluded = run_ranking_grid(
-                indicator_series,
-                etf_return_series,
-                date_min=date_min_avail,
-                date_max=date_max_avail,
-                z_window=60,
-            )
-        st.session_state["sandbox_ranking"] = {"top10": top10, "n_excluded": n_excluded}
-        st.rerun()
-    ranking = st.session_state.get("sandbox_ranking")
-    if ranking:
-        top10 = ranking["top10"]
-        n_excluded = ranking["n_excluded"]
-        if n_excluded > 0:
-            st.caption(f"Combinations excluded by guardrail (Trades < 5 or Time in Market < 5%): {n_excluded}.")
-        if top10:
-            rank_df = pd.DataFrame(top10)
-            st.dataframe(rank_df, use_container_width=True, hide_index=True)
-        else:
-            st.info("No combinations passed the guardrail (all had Trades < 5 or % Time in Market < 5%). Try a different date range or indicator.")
-    else:
-        st.info("Click **Compute Top 10** to run the predefined grid (Raw, Z-score, Percentile, Momentum 1M/3M × Top 80%, Bottom 20%, Cross Median, Z>+1, Z<-1 × Long Only, Risk Reduction, Defensive).")
 
 # Footer
 st.markdown("---")

@@ -420,6 +420,9 @@ def run_ranking_grid(
                 rows.append({
                     "transform": transformation,
                     "threshold": thresh_label,
+                    "threshold_rule": threshold_rule,
+                    "above_pct": above_pct,
+                    "below_pct": below_pct,
                     "position": position_mode,
                     "sharpe": met["strategy"]["sharpe_ratio"],
                     "dd": met["strategy"]["max_drawdown"],
@@ -440,5 +443,9 @@ def run_ranking_grid(
             "CAGR": round(row["cagr"], 2),
             "Trades": row["trades"],
             "Score": round(row["score"], 2),
+            # Engine params for "Load" action
+            "threshold_rule": row["threshold_rule"],
+            "above_pct": row["above_pct"],
+            "below_pct": row["below_pct"],
         })
     return top10, excluded
