@@ -44,6 +44,30 @@ st.markdown("""
 # Paths: app lives in Project03; Project02 may be sibling or under cwd
 PROJECT03_PATH = Path(__file__).resolve().parent
 
+# Strategy Sandbox — User Guidance Layer (plain language, theory, hypothesis, risk)
+SANDBOX_E1_GUIDANCE = {
+    "Raw Level": {"description": "Use the original indicator value without modification.", "theory": "Assumes absolute level contains decision-relevant information.", "hypothesis": "Is the indicator level itself sufficient to signal regime change?", "risk": "Sensitive to scale and structural breaks."},
+    "Z-score": {"description": "Standardizes indicator relative to its historical mean and volatility.", "theory": "Extreme deviations from historical average may signal stress or opportunity.", "hypothesis": "Does deviation from normal level predict abnormal ETF performance?", "risk": "May overreact in volatile periods."},
+    "Percentile Rank": {"description": "Ranks indicator relative to historical distribution.", "theory": "Markets may respond differently when indicator is in extreme tail.", "hypothesis": "Does extreme percentile regime produce different return distribution?", "risk": "Small tail sample size."},
+    "Momentum 1M": {"description": "Measures direction and speed of indicator change over 1 month.", "theory": "Trend in indicator may matter more than level.", "hypothesis": "Does accelerating change precede ETF adjustment?", "risk": "Whipsaw in noisy periods."},
+    "Momentum 3M": {"description": "Measures direction and speed of indicator change over 3 months.", "theory": "Trend in indicator may matter more than level.", "hypothesis": "Does accelerating change precede ETF adjustment?", "risk": "Whipsaw in noisy periods."},
+    "Momentum 6M": {"description": "Measures direction and speed of indicator change over 6 months.", "theory": "Trend in indicator may matter more than level.", "hypothesis": "Does accelerating change precede ETF adjustment?", "risk": "Whipsaw in noisy periods."},
+    "Rate of Change": {"description": "Percentage change in indicator from prior period.", "theory": "Rate of change can signal momentum or reversal earlier than level.", "hypothesis": "Does rate of change in indicator lead ETF returns?", "risk": "Noisy when indicator is near zero or in low-volatility regimes."},
+}
+SANDBOX_E2_GUIDANCE = {
+    "Above X percentile": {"meaning": "Indicator is in the top (100−X)% of historical range.", "interpretation": "Extreme regime condition (e.g. stress or exuberance).", "tested_behaviour": "How ETF performs during high-percentile regimes.", "risk": "Sensitive to choice of X; small sample in tail."},
+    "Below X percentile": {"meaning": "Indicator is in the bottom X% of historical range.", "interpretation": "Low or compressed regime.", "tested_behaviour": "How ETF performs when indicator is in lower tail.", "risk": "Sensitive to choice of X; small sample in tail."},
+    "Cross Median": {"meaning": "Indicator crosses long-term central tendency.", "interpretation": "Regime shift signal.", "tested_behaviour": "Transition effect on ETF returns.", "risk": "Can trigger frequently in sideways markets."},
+    "Z-score > +1": {"meaning": "Indicator is more than one standard deviation above its rolling mean.", "interpretation": "Unusually high / stress regime.", "tested_behaviour": "ETF performance when indicator is extended above normal.", "risk": "Requires Z-score transformation to be meaningful."},
+    "Z-score < -1": {"meaning": "Indicator is more than one standard deviation below its rolling mean.", "interpretation": "Unusually low / compressed regime.", "tested_behaviour": "ETF performance when indicator is extended below normal.", "risk": "Requires Z-score transformation to be meaningful."},
+    "Momentum > 0": {"meaning": "Indicator is rising (positive change over lookback).", "interpretation": "Upside momentum in the indicator.", "tested_behaviour": "Whether positive indicator momentum precedes ETF adjustment.", "risk": "Lagging; can whipsaw at turning points."},
+}
+SANDBOX_E3_GUIDANCE = {
+    "Long Only (In/Out)": {"meaning": "Invest fully only when signal is active; otherwise no exposure.", "use_case": "Binary tactical exposure.", "risk": "Full drawdown when in market; no partial hedging."},
+    "Risk Reduction (50% exposure)": {"meaning": "Reduce exposure (e.g. to 50%) when condition is met, rather than full exit.", "use_case": "Risk overlay, not pure timing.", "risk": "Still exposed during stress; mitigates but does not eliminate."},
+    "Full Defensive (0% exposure)": {"meaning": "Fully exit market when condition is active.", "use_case": "Stress avoidance.", "risk": "Miss upside if condition is persistent; opportunity cost."},
+}
+
 
 def _project02_base():
     """Resolve Project02 base path: try sibling of Project03, then cwd, then cwd/Project02."""
@@ -607,6 +631,13 @@ elif selected_section == "Strategy Sandbox":
                 index=0,
                 key="sandbox_transform",
             )
+            with st.expander("What does this mean? — Transformation (i)", expanded=False):
+                g1 = SANDBOX_E1_GUIDANCE.get(transformation, {})
+                if g1:
+                    st.markdown("**Description**  \n" + g1.get("description", ""))
+                    st.markdown("**Theory**  \n" + g1.get("theory", ""))
+                    st.markdown("**Hypothesis being tested**  \n" + g1.get("hypothesis", ""))
+                    st.markdown("**Risk**  \n" + g1.get("risk", ""))
             z_window = 60
             if transformation == "Z-score":
                 z_window = st.number_input("Z-score rolling window", min_value=12, max_value=120, value=60, step=6, key="sandbox_z")
@@ -617,6 +648,13 @@ elif selected_section == "Strategy Sandbox":
                 index=0,
                 key="sandbox_thresh",
             )
+            with st.expander("What does this mean? — Threshold (i)", expanded=False):
+                g2 = SANDBOX_E2_GUIDANCE.get(threshold_rule, {})
+                if g2:
+                    st.markdown("**Meaning**  \n" + g2.get("meaning", ""))
+                    st.markdown("**Interpretation**  \n" + g2.get("interpretation", ""))
+                    st.markdown("**Tested behaviour**  \n" + g2.get("tested_behaviour", ""))
+                    st.markdown("**Risk**  \n" + g2.get("risk", ""))
             above_pct = 70.0
             below_pct = 30.0
             if threshold_rule == "Above X percentile":
@@ -630,6 +668,22 @@ elif selected_section == "Strategy Sandbox":
                 index=0,
                 key="sandbox_pos",
             )
+            with st.expander("What does this mean? — Position (i)", expanded=False):
+                g3 = SANDBOX_E3_GUIDANCE.get(position_mode, {})
+                if g3:
+                    st.markdown("**Meaning**  \n" + g3.get("meaning", ""))
+                    st.markdown("**Use case**  \n" + g3.get("use_case", ""))
+                    st.markdown("**Risk**  \n" + g3.get("risk", ""))
+        # Dynamic line: what the user is currently testing
+        _thresh_short = {"Above X percentile": "extreme high regime", "Below X percentile": "extreme low regime", "Cross Median": "regime shift", "Z-score > +1": "extended high regime", "Z-score < -1": "extended low regime", "Momentum > 0": "positive momentum"}
+        _pos_short = {"Long Only (In/Out)": "tactical exposure", "Risk Reduction (50% exposure)": "risk overlay", "Full Defensive (0% exposure)": "stress avoidance"}
+        _trans_short = {"Raw Level": "indicator level", "Z-score": "indicator deviation", "Percentile Rank": "indicator percentile", "Momentum 1M": "1M momentum", "Momentum 3M": "3M momentum", "Momentum 6M": "6M momentum", "Rate of Change": "rate of change"}
+        testing_line = "**You are currently testing:** Indicator {} impact on ETF {} ({}).".format(
+            _trans_short.get(transformation, transformation.lower()),
+            _pos_short.get(position_mode, position_mode.lower()),
+            _thresh_short.get(threshold_rule, threshold_rule.lower()),
+        )
+        st.info(testing_line)
         d_min = date_min_avail.date() if hasattr(date_min_avail, "date") else date_min_avail
         d_max = date_max_avail.date() if hasattr(date_max_avail, "date") else date_max_avail
         col_d1, col_d2 = st.columns(2)
