@@ -5,6 +5,7 @@ Deploy to Streamlit Cloud: https://streamlit.io/cloud
 """
 import streamlit as st
 import json
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -120,7 +121,7 @@ def compute_spy_returns_from_prices(spy_prices):
 if "study" not in st.session_state:
     st.session_state["study"] = "p03"
 
-# Sidebar: Home + section list
+# Sidebar: Home + section list (Strategy Sandbox = Layer 2, independent section)
 with st.sidebar:
     st.header("📋 Navigation")
     sections = [
@@ -133,6 +134,7 @@ with st.sidebar:
         "Predictive Modeling",
         "Regime Analysis",
         "Investment Strategy",
+        "Strategy Sandbox",
     ]
     selected_section = st.radio("Select Section", sections)
 
@@ -560,6 +562,204 @@ elif selected_section == "Investment Strategy":
                 })
         if rows:
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+
+# ---------- Strategy Sandbox (Layer 2 — independent section) ----------
+elif selected_section == "Strategy Sandbox":
+    st.header("🧪 Strategy Sandbox")
+    st.caption("Configure transformation, threshold, and position logic. Uses Tier1 indicator and ETF returns only (no new data fetch).")
+
+    # Build Tier1 from existing monthly_data only
+    def _tier1_from_monthly(monthly_data, study_id):
+        if not monthly_data or not monthly_data.get("monthly"):
+            return None, None
+        m = monthly_data["monthly"]
+        dates = pd.to_datetime(m["dates"])
+        if study_id == "p03":
+            ind = [float(x) if x not in ("null", None) else np.nan for x in m["hy_ig_spread"]]
+            ret = [float(x) if x not in ("null", None) else np.nan for x in m["spy_returns"]]
+        else:
+            ind = [float(x) if x not in ("null", None) else np.nan for x in m.get("ratio", [])]
+            spy_prices = [float(x) if x not in ("null", None) else np.nan for x in m.get("spy", [])]
+            ret = compute_spy_returns_from_prices(spy_prices)
+            if len(ret) != len(dates):
+                ret = (ret + [None] * len(dates))[:len(dates)]
+        df = pd.DataFrame({"indicator": ind, "etf_return": ret}, index=dates).dropna(how="all")
+        df = df.dropna(subset=["indicator", "etf_return"])
+        if df.empty or len(df) < 12:
+            return None, None
+        return df["indicator"], df["etf_return"]
+
+    indicator_series, etf_return_series = _tier1_from_monthly(monthly_data, study)
+    if indicator_series is None or etf_return_series is None:
+        st.warning("Tier1 data not available for Sandbox. Ensure monthly data exists and has indicator + ETF returns.")
+        st.stop()
+
+    date_min_avail = indicator_series.index.min()
+    date_max_avail = indicator_series.index.max()
+
+    # Top Panel — Strategy Configuration
+    with st.expander("Strategy Configuration", expanded=True):
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            transformation = st.selectbox(
+                "Transformation",
+                ["Raw Level", "Z-score", "Percentile Rank", "Momentum 1M", "Momentum 3M", "Momentum 6M", "Rate of Change"],
+                index=0,
+                key="sandbox_transform",
+            )
+            z_window = 60
+            if transformation == "Z-score":
+                z_window = st.number_input("Z-score rolling window", min_value=12, max_value=120, value=60, step=6, key="sandbox_z")
+        with c2:
+            threshold_rule = st.selectbox(
+                "Threshold",
+                ["Above X percentile", "Below X percentile", "Cross Median", "Z-score > +1", "Z-score < -1", "Momentum > 0"],
+                index=0,
+                key="sandbox_thresh",
+            )
+            above_pct = 70.0
+            below_pct = 30.0
+            if threshold_rule == "Above X percentile":
+                above_pct = st.slider("Percentile (above)", 50, 95, 70, key="sandbox_above")
+            elif threshold_rule == "Below X percentile":
+                below_pct = st.slider("Percentile (below)", 5, 50, 30, key="sandbox_below")
+        with c3:
+            position_mode = st.selectbox(
+                "Position Logic",
+                ["Long Only (In/Out)", "Risk Reduction (50% exposure)", "Full Defensive (0% exposure)"],
+                index=0,
+                key="sandbox_pos",
+            )
+        d_min = date_min_avail.date() if hasattr(date_min_avail, "date") else date_min_avail
+        d_max = date_max_avail.date() if hasattr(date_max_avail, "date") else date_max_avail
+        col_d1, col_d2 = st.columns(2)
+        with col_d1:
+            date_start = st.date_input("Start date", value=d_min, min_value=d_min, max_value=d_max, key="sandbox_start")
+        with col_d2:
+            date_end = st.date_input("End date", value=d_max, min_value=d_min, max_value=d_max, key="sandbox_end")
+        dr_min = pd.Timestamp(date_start)
+        dr_max = pd.Timestamp(date_end)
+        if dr_min > dr_max:
+            dr_min, dr_max = dr_max, dr_min
+
+        run_clicked = st.button("Run Sandbox Strategy", type="primary", key="sandbox_run")
+
+    result = None
+    if run_clicked:
+        try:
+            from sandbox_engine import run_sandbox
+        except ImportError:
+            from Project03.sandbox_engine import run_sandbox
+        res = run_sandbox(
+            indicator_series,
+            etf_return_series,
+            transformation=transformation,
+            threshold_rule=threshold_rule,
+            position_mode=position_mode,
+            above_pct=above_pct,
+            below_pct=below_pct,
+            z_window=z_window,
+            date_min=dr_min,
+            date_max=dr_max,
+        )
+        if res.get("error"):
+            st.error(res["error"])
+            result = res
+        else:
+            st.session_state["sandbox_result"] = res
+            st.rerun()
+    else:
+        result = st.session_state.get("sandbox_result")
+
+    if result and not result.get("error"):
+        # Sample size warning (Guardrail 3)
+        if result.get("sample_size_warning"):
+            st.warning("⚠ Strategy sample size may be insufficient for statistical reliability (Number of Trades < 5 or Active Periods < 5% of dataset).")
+
+        # Middle Panel — Performance Summary (Strategy | Benchmark)
+        st.subheader("Performance Summary")
+        left, right = st.columns(2)
+        met = result["evaluation_metrics"]
+        with left:
+            st.markdown("**Strategy Metrics**")
+            s = met["strategy"]
+            st.metric("Total Return", f"{s['total_return']:.2f}%")
+            st.metric("CAGR", f"{s['cagr']:.2f}%")
+            st.metric("Sharpe Ratio", f"{s['sharpe_ratio']:.2f}")
+            st.metric("Max Drawdown", f"{s['max_drawdown']:.2f}%")
+            st.metric("Volatility", f"{s['volatility']:.2f}%")
+            st.metric("Win Rate", f"{s['win_rate']:.1f}%")
+            st.metric("Calmar Ratio", f"{s['calmar_ratio']:.2f}")
+        with right:
+            st.markdown("**Benchmark (ETF Buy & Hold)**")
+            b = met["benchmark"]
+            st.metric("Total Return", f"{b['total_return']:.2f}%")
+            st.metric("CAGR", f"{b['cagr']:.2f}%")
+            st.metric("Sharpe Ratio", f"{b['sharpe_ratio']:.2f}")
+            st.metric("Max Drawdown", f"{b['max_drawdown']:.2f}%")
+            st.metric("Volatility", f"{b['volatility']:.2f}%")
+            st.metric("Win Rate", f"{b['win_rate']:.1f}%")
+            st.metric("Calmar Ratio", f"{b['calmar_ratio']:.2f}")
+
+        # Sample size metrics
+        st.subheader("Sample Size Metrics")
+        ss = result["sample_size_metrics"]
+        sc1, sc2, sc3, sc4 = st.columns(4)
+        with sc1:
+            st.metric("Number of Trades", ss["n_trades"])
+            st.metric("Active Periods", ss["n_active_periods"])
+        with sc2:
+            st.metric("Avg Holding Period", f"{ss['avg_holding_period']:.1f} periods")
+            st.metric("% Time in Market", f"{ss['pct_time_in_market']:.1f}%")
+        with sc3:
+            st.metric("Max Holding Period", ss["max_holding_period"])
+        with sc4:
+            st.metric("Min Holding Period", ss["min_holding_period"])
+
+        # Bottom Panel — Visual Output
+        st.subheader("Charts")
+        dates = result["dates"]
+        cum_s = result["strategy_cumulative"].values
+        cum_b = result["benchmark_cumulative"].values
+        dd_s = result["strategy_drawdown"].values
+        dd_b = result["benchmark_drawdown"].values
+        exp = result["exposure"].values
+
+        fig_equity = go.Figure()
+        fig_equity.add_trace(go.Scatter(x=dates, y=cum_s, name="Strategy", line=dict(color="#28a745", width=2)))
+        fig_equity.add_trace(go.Scatter(x=dates, y=cum_b, name="Benchmark (ETF Buy & Hold)", line=dict(color="#667eea", width=2)))
+        fig_equity.update_layout(title="Equity Curve: Strategy vs Benchmark", xaxis_title="Date", yaxis_title="Cumulative Return (multiple)", height=400)
+        st.plotly_chart(fig_equity, use_container_width=True)
+
+        fig_dd = go.Figure()
+        fig_dd.add_trace(go.Scatter(x=dates, y=dd_s, name="Strategy Drawdown", fill="tozeroy", line=dict(color="#28a745")))
+        fig_dd.add_trace(go.Scatter(x=dates, y=dd_b, name="Benchmark Drawdown", fill="tozeroy", line=dict(color="#667eea")))
+        fig_dd.update_layout(title="Drawdown Comparison", xaxis_title="Date", yaxis_title="Drawdown (%)", height=350)
+        st.plotly_chart(fig_dd, use_container_width=True)
+
+        fig_exp = go.Figure()
+        fig_exp.add_trace(go.Scatter(x=dates, y=exp, name="Exposure", line=dict(color="#6c757d"), fill="tozeroy"))
+        fig_exp.update_layout(title="Exposure Timeline", xaxis_title="Date", yaxis_title="Exposure (0–1)", height=300)
+        st.plotly_chart(fig_exp, use_container_width=True)
+
+        # Download config + metrics as CSV
+        st.subheader("Export")
+        config = result.get("config", {})
+        rows = [{"metric": "Strategy Total Return %", "value": met["strategy"]["total_return"]}, {"metric": "Strategy CAGR %", "value": met["strategy"]["cagr"]}, {"metric": "Strategy Sharpe", "value": met["strategy"]["sharpe_ratio"]}, {"metric": "Strategy Max DD %", "value": met["strategy"]["max_drawdown"]}, {"metric": "Benchmark Total Return %", "value": met["benchmark"]["total_return"]}, {"metric": "Benchmark CAGR %", "value": met["benchmark"]["cagr"]}]
+        for k, v in config.items():
+            rows.append({"metric": f"config_{k}", "value": v})
+        for k, v in ss.items():
+            rows.append({"metric": f"sample_{k}", "value": v})
+        export_df = pd.DataFrame(rows)
+        st.download_button(
+            "Download configuration + metrics (CSV)",
+            data=export_df.to_csv(index=False).encode("utf-8"),
+            file_name=f"sandbox_config_metrics_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+            mime="text/csv",
+            key="sandbox_download",
+        )
+    elif result and result.get("error"):
+        st.error(result["error"])
 
 # Footer
 st.markdown("---")
